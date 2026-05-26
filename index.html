@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🌸 日本家庭旅遊規劃</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <style>
     :root {
       --sakura: #f9a8c9;
@@ -723,6 +726,29 @@
       .modal { padding: 20px; }
     }
 
+    /* ── Sync indicator ── */
+    .sync-chip {
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 0.78rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.3s;
+    }
+    .sync-chip.syncing { background: rgba(255,200,0,0.3); }
+    .sync-chip.online  { background: rgba(100,255,150,0.25); }
+    .sync-chip.offline { background: rgba(255,100,100,0.3); }
+    .sync-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #aaa; flex-shrink: 0;
+    }
+    .sync-chip.online .sync-dot  { background: #6fff9e; }
+    .sync-chip.syncing .sync-dot { background: #ffe066; animation: pulse 0.8s infinite; }
+    .sync-chip.offline .sync-dot { background: #ff6b6b; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
     /* ── Progress bar ── */
     .pack-prog-bar {
       height: 4px;
@@ -763,6 +789,7 @@
       <div class="stat-chip">📅 <span id="totalDays">0</span> 天</div>
       <div class="stat-chip">📍 <span id="totalStops">0</span> 景點</div>
       <div class="stat-chip">💴 ¥<span id="totalBudget">0</span></div>
+      <div class="sync-chip" id="syncChip"><div class="sync-dot"></div><span id="syncLabel">連線中...</span></div>
     </div>
   </div>
   <div class="tabs">
@@ -893,7 +920,26 @@
 //  DATA
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const STORAGE_KEY = 'japan_trip_2026';
+// ── Firebase 初始化 ──
+const firebaseConfig = {
+  apiKey: "AIzaSyAwA1RVbXqaCJh3PR0I_tOkQxTljhhRdfI",
+  authDomain: "japan-trip-2fa53.firebaseapp.com",
+  databaseURL: "https://japan-trip-2fa53-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "japan-trip-2fa53",
+  storageBucket: "japan-trip-2fa53.firebasestorage.app",
+  messagingSenderId: "743328715751",
+  appId: "1:743328715751:web:7f80dd45a7c5d076ed2342"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const tripRef = db.ref('tripData');
+
+function setSyncStatus(status) {
+  const chip = document.getElementById('syncChip');
+  const label = document.getElementById('syncLabel');
+  chip.className = 'sync-chip ' + status;
+  label.textContent = status === 'online' ? '已同步' : status === 'syncing' ? '同步中...' : '離線';
+}
 
 const DEFAULT_DATA = {
   days: [
@@ -990,16 +1036,15 @@ let editingDayId = null;
 let editingStopDayId = null;
 
 function loadData() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    data = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_DATA));
-  } catch(e) {
-    data = JSON.parse(JSON.stringify(DEFAULT_DATA));
-  }
+  // 初始設預設資料，等 Firebase 回傳後覆蓋
+  data = JSON.parse(JSON.stringify(DEFAULT_DATA));
 }
 
 function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  setSyncStatus('syncing');
+  tripRef.set(data)
+    .then(() => setSyncStatus('online'))
+    .catch(() => setSyncStatus('offline'));
 }
 
 function uid() {
@@ -1433,10 +1478,111 @@ document.getElementById('dayModal').addEventListener('click', function(e) {
 });
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  INIT
+//  INIT — Firebase 即時同步
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 loadData();
 render();
+
+// 監聽 Firebase 資料變化（任何人修改都會自動更新）
+tripRef.on('value', (snapshot) => {
+  const val = snapshot.val();
+  if (val) {
+    data = val;
+  } else {
+    // 第一次使用，把預設資料寫入 Firebase
+    saveData();
+  }
+  render();
+  setSyncStatus('online');
+});
+
+// 監聽連線狀態
+db.ref('.info/connected').on('value', (snap) => {
+  if (!snap.val()) setSyncStatus('offline');
+});
+</script>
+</body>
+</html>
+  item.checked = !item.checked;
+  saveData();
+  renderPacking();
+}
+
+function deletePackItem(catId, itemId) {
+  const cat = data.packing.find(c => c.id === catId);
+  cat.items = cat.items.filter(i => i.id !== itemId);
+  saveData();
+  renderPacking();
+}
+
+function addPackItem(catId) {
+  const input = document.getElementById('packInput-' + catId);
+  const name = input.value.trim();
+  if (!name) return;
+  const cat = data.packing.find(c => c.id === catId);
+  cat.items.push({ id: uid(), name, checked: false });
+  input.value = '';
+  saveData();
+  renderPacking();
+}
+
+function checkAllInCat(catId) {
+  const cat = data.packing.find(c => c.id === catId);
+  const allChecked = cat.items.every(i => i.checked);
+  cat.items.forEach(i => i.checked = !allChecked);
+  saveData();
+  renderPacking();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  UTILS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// Close modals on overlay click
+document.getElementById('stopModal').addEventListener('click', function(e) {
+  if (e.target === this) closeStopModal();
+});
+document.getElementById('dayModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDayModal();
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  INIT — Firebase 即時同步
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+loadData();
+render();
+
+// 監聽 Firebase 資料（任何人修改全家自動更新）
+tripRef.on('value', function(snapshot) {
+  const val = snapshot.val();
+  if (val) {
+    data = val;
+  } else {
+    saveData(); // 第一次使用，寫入預設資料
+  }
+  render();
+  setSyncStatus('online');
+});
+
+// 監聽連線狀態
+db.ref('.info/connected').on('value', function(snap) {
+  if (!snap.val()) setSyncStatus('offline');
+});
+</script>
+</body>
+</html>
+);
 </script>
 </body>
 </html>
