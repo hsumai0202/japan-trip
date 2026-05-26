@@ -4,719 +4,153 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🌸 日本家庭旅遊規劃</title>
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <style>
     :root {
-      --sakura: #f9a8c9;
-      --sakura-dark: #e07fa0;
-      --sakura-light: #fce4ec;
-      --green: #4caf7d;
-      --green-dark: #388e5a;
-      --blue: #5b9bd5;
-      --blue-light: #e3f0ff;
-      --bg: #fff9fb;
-      --white: #ffffff;
-      --text: #3a2a35;
-      --text-light: #8a7080;
-      --border: #f0d8e5;
-      --shadow: rgba(240,100,150,0.1);
+      --sakura: #f9a8c9; --sakura-dark: #e07fa0; --sakura-light: #fce4ec;
+      --blue: #5b9bd5; --blue-light: #e3f0ff;
+      --bg: #fff9fb; --white: #ffffff;
+      --text: #3a2a35; --text-light: #8a7080;
+      --border: #f0d8e5; --shadow: rgba(240,100,150,0.1);
       --red: #e74c3c;
-      --yellow: #f39c12;
-      --purple: #8e44ad;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    body {
-      font-family: 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+    header { background: linear-gradient(135deg,#f06292,#e91e8c,#ad1457); color: white; padding: 20px 24px 0; box-shadow: 0 4px 20px rgba(233,30,140,.3); }
+    .header-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+    .trip-title-area h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: 1px; }
+    .trip-title-area p { font-size: .85rem; opacity: .85; margin-top: 2px; }
+    .header-stats { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .stat-chip { background: rgba(255,255,255,.2); border-radius: 20px; padding: 6px 14px; font-size: .82rem; display: flex; align-items: center; gap: 5px; }
 
-    /* ── Header ── */
-    header {
-      background: linear-gradient(135deg, #f06292, #e91e8c, #ad1457);
-      color: white;
-      padding: 20px 24px 0;
-      box-shadow: 0 4px 20px rgba(233,30,140,0.3);
-    }
+    .sync-chip { background: rgba(255,255,255,.15); border-radius: 20px; padding: 5px 12px; font-size: .78rem; display: flex; align-items: center; gap: 5px; transition: background .3s; }
+    .sync-chip.online  { background: rgba(100,255,150,.25); }
+    .sync-chip.syncing { background: rgba(255,200,0,.3); }
+    .sync-chip.offline { background: rgba(255,100,100,.3); }
+    .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #aaa; flex-shrink: 0; }
+    .sync-chip.online  .sync-dot { background: #6fff9e; }
+    .sync-chip.syncing .sync-dot { background: #ffe066; animation: pulse .8s infinite; }
+    .sync-chip.offline .sync-dot { background: #ff6b6b; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    .header-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
+    .tabs { display: flex; }
+    .tab-btn { flex: 1; background: rgba(255,255,255,.15); border: none; color: rgba(255,255,255,.8); padding: 12px 8px; font-size: .88rem; cursor: pointer; transition: all .2s; font-family: inherit; border-radius: 8px 8px 0 0; }
+    .tab-btn.active { background: var(--white); color: #ad1457; font-weight: 700; }
+    .tab-btn:hover:not(.active) { background: rgba(255,255,255,.25); color: white; }
 
-    .trip-title-area h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
-      letter-spacing: 1px;
-    }
-
-    .trip-title-area p {
-      font-size: 0.85rem;
-      opacity: 0.85;
-      margin-top: 2px;
-    }
-
-    .header-stats {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .stat-chip {
-      background: rgba(255,255,255,0.2);
-      border-radius: 20px;
-      padding: 6px 14px;
-      font-size: 0.82rem;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    /* ── Tabs ── */
-    .tabs {
-      display: flex;
-      gap: 0;
-      margin-top: 0;
-    }
-
-    .tab-btn {
-      flex: 1;
-      background: rgba(255,255,255,0.15);
-      border: none;
-      color: rgba(255,255,255,0.8);
-      padding: 12px 8px;
-      font-size: 0.88rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-family: inherit;
-      border-radius: 8px 8px 0 0;
-    }
-
-    .tab-btn.active {
-      background: var(--white);
-      color: #ad1457;
-      font-weight: 700;
-    }
-
-    .tab-btn:hover:not(.active) {
-      background: rgba(255,255,255,0.25);
-      color: white;
-    }
-
-    /* ── Main Content ── */
-    main {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px 16px 60px;
-    }
-
+    main { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    /* ── Day Cards ── */
-    .day-section {
-      background: var(--white);
-      border-radius: 16px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 12px var(--shadow);
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-
-    .day-header {
-      background: linear-gradient(90deg, #fce4ec, #fff);
-      padding: 14px 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 8px;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .day-header:hover {
-      background: linear-gradient(90deg, #f8bbd0, #fff5f8);
-    }
-
-    .day-header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .day-badge {
-      background: linear-gradient(135deg, #e91e8c, #f06292);
-      color: white;
-      border-radius: 12px;
-      padding: 4px 14px;
-      font-size: 0.82rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .day-title {
-      font-weight: 700;
-      font-size: 1rem;
-      color: var(--text);
-    }
-
-    .day-meta {
-      font-size: 0.78rem;
-      color: var(--text-light);
-      margin-top: 2px;
-    }
-
-    .day-header-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .day-cost-pill {
-      background: #fff3e0;
-      color: #e65100;
-      border-radius: 20px;
-      padding: 3px 10px;
-      font-size: 0.78rem;
-      font-weight: 600;
-    }
-
-    .weather-btn {
-      background: var(--blue-light);
-      color: var(--blue);
-      border: none;
-      border-radius: 8px;
-      padding: 5px 10px;
-      font-size: 0.78rem;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-family: inherit;
-    }
-
+    .day-section { background: var(--white); border-radius: 16px; margin-bottom: 20px; box-shadow: 0 2px 12px var(--shadow); overflow: hidden; border: 1px solid var(--border); }
+    .day-header { background: linear-gradient(90deg,#fce4ec,#fff); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; cursor: pointer; user-select: none; }
+    .day-header:hover { background: linear-gradient(90deg,#f8bbd0,#fff5f8); }
+    .day-header-left { display: flex; align-items: center; gap: 12px; }
+    .day-badge { background: linear-gradient(135deg,#e91e8c,#f06292); color: white; border-radius: 12px; padding: 4px 14px; font-size: .82rem; font-weight: 700; white-space: nowrap; }
+    .day-title { font-weight: 700; font-size: 1rem; }
+    .day-meta { font-size: .78rem; color: var(--text-light); margin-top: 2px; }
+    .day-header-right { display: flex; align-items: center; gap: 8px; }
+    .day-cost-pill { background: #fff3e0; color: #e65100; border-radius: 20px; padding: 3px 10px; font-size: .78rem; font-weight: 600; }
+    .weather-btn { background: var(--blue-light); color: var(--blue); border: none; border-radius: 8px; padding: 5px 10px; font-size: .78rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
     .weather-btn:hover { background: #c8dff5; }
-
-    .add-stop-btn {
-      background: var(--sakura-light);
-      color: #ad1457;
-      border: 1px dashed #f48fb1;
-      border-radius: 8px;
-      padding: 5px 12px;
-      font-size: 0.78rem;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
+    .add-stop-btn { background: var(--sakura-light); color: #ad1457; border: 1px dashed #f48fb1; border-radius: 8px; padding: 5px 12px; font-size: .78rem; cursor: pointer; font-family: inherit; }
     .add-stop-btn:hover { background: #fce4ec; }
-
-    .collapse-icon {
-      color: var(--text-light);
-      font-size: 1.1rem;
-      transition: transform 0.2s;
-    }
-
+    .collapse-icon { color: var(--text-light); font-size: 1.1rem; transition: transform .2s; }
     .day-section.collapsed .collapse-icon { transform: rotate(-90deg); }
 
-    /* ── Stops ── */
-    .stops-list {
-      padding: 8px 18px 12px;
-    }
-
+    .stops-list { padding: 8px 18px 12px; }
     .day-section.collapsed .stops-list { display: none; }
-
-    .stop-item {
-      display: flex;
-      gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
-      align-items: flex-start;
-    }
-
+    .stop-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
     .stop-item:last-child { border-bottom: none; }
-
-    .stop-time-col {
-      min-width: 52px;
-      text-align: center;
-      padding-top: 2px;
-    }
-
-    .stop-time {
-      font-size: 0.78rem;
-      color: var(--text-light);
-      background: #f5f5f5;
-      border-radius: 6px;
-      padding: 2px 6px;
-    }
-
-    .stop-icon-col {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-width: 24px;
-    }
-
-    .stop-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: var(--sakura-dark);
-      border: 2px solid var(--sakura);
-      flex-shrink: 0;
-      margin-top: 4px;
-    }
-
-    .stop-line {
-      width: 2px;
-      flex: 1;
-      background: var(--border);
-      min-height: 20px;
-    }
-
+    .stop-time-col { min-width: 52px; text-align: center; padding-top: 2px; }
+    .stop-time { font-size: .78rem; color: var(--text-light); background: #f5f5f5; border-radius: 6px; padding: 2px 6px; }
+    .stop-icon-col { display: flex; flex-direction: column; align-items: center; min-width: 24px; }
+    .stop-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--sakura-dark); border: 2px solid var(--sakura); flex-shrink: 0; margin-top: 4px; }
+    .stop-line { width: 2px; flex: 1; background: var(--border); min-height: 20px; }
     .stop-content { flex: 1; }
-
-    .stop-name {
-      font-weight: 600;
-      font-size: 0.95rem;
-      color: var(--text);
-    }
-
-    .stop-category-tag {
-      display: inline-block;
-      border-radius: 6px;
-      padding: 1px 8px;
-      font-size: 0.7rem;
-      margin-left: 6px;
-      font-weight: 600;
-    }
-
+    .stop-name { font-weight: 600; font-size: .95rem; }
+    .stop-category-tag { display: inline-block; border-radius: 6px; padding: 1px 8px; font-size: .7rem; margin-left: 6px; font-weight: 600; }
     .cat-food { background: #fff3e0; color: #e65100; }
     .cat-sight { background: #e8f5e9; color: #2e7d32; }
     .cat-hotel { background: #e3f0ff; color: #1565c0; }
     .cat-transport { background: #f3e5f5; color: #6a1b9a; }
     .cat-other { background: #f5f5f5; color: #555; }
-
-    .stop-note {
-      font-size: 0.8rem;
-      color: var(--text-light);
-      margin-top: 3px;
-    }
-
-    .stop-actions {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      flex-shrink: 0;
-    }
-
-    .stop-cost {
-      font-size: 0.82rem;
-      color: #e65100;
-      font-weight: 600;
-      min-width: 60px;
-      text-align: right;
-    }
-
-    .icon-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 4px;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      opacity: 0.6;
-      transition: all 0.15s;
-    }
-
-    .icon-btn:hover { opacity: 1; background: #f5f5f5; }
-
-    .map-link {
-      color: var(--blue);
-      text-decoration: none;
-      font-size: 0.78rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      margin-top: 4px;
-    }
-
+    .stop-note { font-size: .8rem; color: var(--text-light); margin-top: 3px; }
+    .stop-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+    .stop-cost { font-size: .82rem; color: #e65100; font-weight: 600; min-width: 60px; text-align: right; }
+    .map-link { color: var(--blue); text-decoration: none; font-size: .78rem; display: inline-flex; align-items: center; gap: 3px; margin-top: 4px; }
     .map-link:hover { text-decoration: underline; }
 
-    /* ── Add Day Bar ── */
-    .add-day-bar {
-      text-align: center;
-      margin: 8px 0 24px;
-    }
+    .add-day-bar { text-align: center; margin: 8px 0 24px; }
+    .add-day-btn { background: white; border: 2px dashed var(--sakura); color: #ad1457; border-radius: 12px; padding: 10px 28px; font-size: .9rem; cursor: pointer; font-family: inherit; transition: all .2s; }
+    .add-day-btn:hover { background: var(--sakura-light); }
 
-    .add-day-btn {
-      background: white;
-      border: 2px dashed var(--sakura);
-      color: #ad1457;
-      border-radius: 12px;
-      padding: 10px 28px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.2s;
-    }
-
-    .add-day-btn:hover {
-      background: var(--sakura-light);
-    }
-
-    /* ── Budget Panel ── */
-    .budget-summary {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 2px 12px var(--shadow);
-      border: 1px solid var(--border);
-      margin-bottom: 20px;
-    }
-
-    .budget-summary h3 {
-      font-size: 1rem;
-      margin-bottom: 14px;
-      color: var(--text);
-    }
-
-    .budget-bars {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .budget-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .budget-label {
-      min-width: 80px;
-      font-size: 0.82rem;
-      color: var(--text-light);
-    }
-
-    .budget-bar-wrap {
-      flex: 1;
-      height: 8px;
-      background: #f0f0f0;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    .budget-bar-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 0.4s;
-    }
-
-    .budget-amount {
-      min-width: 80px;
-      text-align: right;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .budget-total-row {
-      display: flex;
-      justify-content: space-between;
-      padding-top: 14px;
-      margin-top: 10px;
-      border-top: 2px solid var(--border);
-    }
-
-    .budget-total-label { font-weight: 700; font-size: 0.95rem; }
+    .budget-summary { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 12px var(--shadow); border: 1px solid var(--border); margin-bottom: 20px; }
+    .budget-summary h3 { font-size: 1rem; margin-bottom: 14px; }
+    .budget-bars { display: flex; flex-direction: column; gap: 10px; }
+    .budget-row { display: flex; align-items: center; gap: 10px; }
+    .budget-label { min-width: 80px; font-size: .82rem; color: var(--text-light); }
+    .budget-bar-wrap { flex: 1; height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+    .budget-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+    .budget-amount { min-width: 80px; text-align: right; font-size: .82rem; font-weight: 600; }
+    .budget-total-row { display: flex; justify-content: space-between; padding-top: 14px; margin-top: 10px; border-top: 2px solid var(--border); }
+    .budget-total-label { font-weight: 700; font-size: .95rem; }
     .budget-total-amount { font-weight: 700; font-size: 1.1rem; color: #e65100; }
-
-    .expense-list {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 2px 12px var(--shadow);
-      border: 1px solid var(--border);
-    }
-
-    .expense-list h3 {
-      font-size: 1rem;
-      margin-bottom: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .expense-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    .expense-table th {
-      text-align: left;
-      padding: 8px 10px;
-      background: #fce4ec;
-      color: #ad1457;
-      font-weight: 600;
-    }
+    .expense-list { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 12px var(--shadow); border: 1px solid var(--border); }
+    .expense-list h3 { font-size: 1rem; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .expense-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .expense-table th { text-align: left; padding: 8px 10px; background: #fce4ec; color: #ad1457; font-weight: 600; }
     .expense-table th:first-child { border-radius: 8px 0 0 8px; }
     .expense-table th:last-child { border-radius: 0 8px 8px 0; text-align: right; }
     .expense-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); }
     .expense-table td:last-child { text-align: right; font-weight: 600; color: #e65100; }
     .expense-table tr:hover td { background: #fff9fb; }
 
-    /* ── Packing List ── */
-    .pack-section {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 2px 12px var(--shadow);
-      border: 1px solid var(--border);
-      margin-bottom: 16px;
-    }
-
-    .pack-section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-
-    .pack-section-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 700;
-      font-size: 0.95rem;
-    }
-
-    .pack-progress {
-      font-size: 0.78rem;
-      color: var(--text-light);
-    }
-
+    .pack-section { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 12px var(--shadow); border: 1px solid var(--border); margin-bottom: 16px; }
+    .pack-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .pack-section-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: .95rem; }
+    .pack-progress { font-size: .78rem; color: var(--text-light); }
+    .pack-prog-bar { height: 4px; background: #f0f0f0; border-radius: 2px; margin-bottom: 12px; overflow: hidden; }
+    .pack-prog-fill { height: 100%; background: linear-gradient(90deg,var(--sakura-dark),#f06292); border-radius: 2px; transition: width .3s; }
     .pack-items { display: flex; flex-direction: column; gap: 6px; }
-
-    .pack-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 7px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
+    .pack-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; cursor: pointer; transition: background .15s; }
     .pack-item:hover { background: #f9f9f9; }
-
-    .pack-item.checked { opacity: 0.5; }
-
-    .pack-item.checked .pack-item-name {
-      text-decoration: line-through;
-      color: var(--text-light);
-    }
-
-    .pack-checkbox {
-      width: 18px;
-      height: 18px;
-      border: 2px solid var(--sakura-dark);
-      border-radius: 5px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.75rem;
-      color: white;
-    }
-
-    .pack-item.checked .pack-checkbox {
-      background: var(--sakura-dark);
-    }
-
-    .pack-item-name { font-size: 0.88rem; flex: 1; }
-
-    .pack-add-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .pack-add-input {
-      flex: 1;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 7px 12px;
-      font-size: 0.85rem;
-      font-family: inherit;
-      outline: none;
-    }
-
+    .pack-item.checked { opacity: .5; }
+    .pack-item.checked .pack-item-name { text-decoration: line-through; color: var(--text-light); }
+    .pack-checkbox { width: 18px; height: 18px; border: 2px solid var(--sakura-dark); border-radius: 5px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: .75rem; color: white; }
+    .pack-item.checked .pack-checkbox { background: var(--sakura-dark); }
+    .pack-item-name { font-size: .88rem; flex: 1; }
+    .pack-add-row { display: flex; gap: 8px; margin-top: 10px; }
+    .pack-add-input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: .85rem; font-family: inherit; outline: none; }
     .pack-add-input:focus { border-color: var(--sakura-dark); }
+    .pack-add-submit { background: var(--sakura-dark); color: white; border: none; border-radius: 8px; padding: 7px 14px; font-size: .85rem; cursor: pointer; font-family: inherit; }
+    .section-action-btn { background: var(--sakura-light); color: #ad1457; border: none; border-radius: 8px; padding: 5px 12px; font-size: .78rem; cursor: pointer; font-family: inherit; }
 
-    .pack-add-submit {
-      background: var(--sakura-dark);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 7px 14px;
-      font-size: 0.85rem;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
-    .pack-add-submit:hover { background: #c2185b; }
-
-    /* ── Modal ── */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.45);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
     .modal-overlay.open { display: flex; }
-
-    .modal {
-      background: white;
-      border-radius: 20px;
-      padding: 28px;
-      width: 100%;
-      max-width: 460px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .modal h2 {
-      font-size: 1.1rem;
-      margin-bottom: 20px;
-      color: #ad1457;
-    }
-
+    .modal { background: white; border-radius: 20px; padding: 28px; width: 100%; max-width: 460px; box-shadow: 0 20px 60px rgba(0,0,0,.2); max-height: 90vh; overflow-y: auto; }
+    .modal h2 { font-size: 1.1rem; margin-bottom: 20px; color: #ad1457; }
     .form-group { margin-bottom: 14px; }
-
-    .form-group label {
-      display: block;
-      font-size: 0.82rem;
-      font-weight: 600;
-      margin-bottom: 5px;
-      color: var(--text-light);
-    }
-
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      width: 100%;
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      padding: 9px 12px;
-      font-size: 0.9rem;
-      font-family: inherit;
-      outline: none;
-      transition: border 0.2s;
-      background: white;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      border-color: var(--sakura-dark);
-    }
-
+    .form-group label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: 5px; color: var(--text-light); }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 12px; font-size: .9rem; font-family: inherit; outline: none; transition: border .2s; background: white; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--sakura-dark); }
     .form-row { display: flex; gap: 10px; }
     .form-row .form-group { flex: 1; }
-
-    .modal-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .btn-primary {
-      flex: 1;
-      background: linear-gradient(135deg, #e91e8c, #f06292);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 11px;
-      font-size: 0.92rem;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
-    .btn-primary:hover { opacity: 0.9; }
-
-    .btn-secondary {
-      flex: 1;
-      background: #f5f5f5;
-      color: var(--text);
-      border: none;
-      border-radius: 10px;
-      padding: 11px;
-      font-size: 0.92rem;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-primary { flex: 1; background: linear-gradient(135deg,#e91e8c,#f06292); color: white; border: none; border-radius: 10px; padding: 11px; font-size: .92rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-primary:hover { opacity: .9; }
+    .btn-secondary { flex: 1; background: #f5f5f5; color: var(--text); border: none; border-radius: 10px; padding: 11px; font-size: .92rem; cursor: pointer; font-family: inherit; }
     .btn-secondary:hover { background: #ebebeb; }
-
-    .btn-danger {
-      background: #ffeaea;
-      color: var(--red);
-      border: none;
-      border-radius: 10px;
-      padding: 11px 18px;
-      font-size: 0.92rem;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
+    .btn-danger { background: #ffeaea; color: var(--red); border: none; border-radius: 10px; padding: 11px 18px; font-size: .92rem; cursor: pointer; font-family: inherit; }
     .btn-danger:hover { background: #ffcdd2; }
 
-    /* ── Day Modal ── */
-    .modal-day { max-width: 380px; }
-
-    /* ── Toast ── */
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: #333;
-      color: white;
-      padding: 10px 22px;
-      border-radius: 20px;
-      font-size: 0.88rem;
-      z-index: 2000;
-      transition: transform 0.3s;
-      pointer-events: none;
-    }
-
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #333; color: white; padding: 10px 22px; border-radius: 20px; font-size: .88rem; z-index: 2000; transition: transform .3s; pointer-events: none; }
     .toast.show { transform: translateX(-50%) translateY(0); }
-
-    /* ── Empty State ── */
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-light);
-    }
-
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
     .empty-state .emoji { font-size: 2.5rem; margin-bottom: 10px; }
-    .empty-state p { font-size: 0.9rem; }
 
-    /* ── Responsive ── */
     @media (max-width: 600px) {
       header { padding: 16px 14px 0; }
       .trip-title-area h1 { font-size: 1.3rem; }
@@ -725,56 +159,8 @@
       .stops-list { padding: 6px 14px 10px; }
       .modal { padding: 20px; }
     }
-
-    /* ── Sync indicator ── */
-    .sync-chip {
-      background: rgba(255,255,255,0.2);
-      border-radius: 20px;
-      padding: 5px 12px;
-      font-size: 0.78rem;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      transition: all 0.3s;
-    }
-    .sync-chip.syncing { background: rgba(255,200,0,0.3); }
-    .sync-chip.online  { background: rgba(100,255,150,0.25); }
-    .sync-chip.offline { background: rgba(255,100,100,0.3); }
-    .sync-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: #aaa; flex-shrink: 0;
-    }
-    .sync-chip.online .sync-dot  { background: #6fff9e; }
-    .sync-chip.syncing .sync-dot { background: #ffe066; animation: pulse 0.8s infinite; }
-    .sync-chip.offline .sync-dot { background: #ff6b6b; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-    /* ── Progress bar ── */
-    .pack-prog-bar {
-      height: 4px;
-      background: #f0f0f0;
-      border-radius: 2px;
-      margin-bottom: 12px;
-      overflow: hidden;
-    }
-
-    .pack-prog-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--sakura-dark), #f06292);
-      border-radius: 2px;
-      transition: width 0.3s;
-    }
-
-    .section-action-btn {
-      background: var(--sakura-light);
-      color: #ad1457;
-      border: none;
-      border-radius: 8px;
-      padding: 5px 12px;
-      font-size: 0.78rem;
-      cursor: pointer;
-      font-family: inherit;
-    }
+  .icon-btn{background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;font-size:.9rem;opacity:.6;transition:all .15s}
+    .icon-btn:hover{opacity:1;background:#f5f5f5}
   </style>
 </head>
 <body>
@@ -793,15 +179,13 @@
     </div>
   </div>
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('itinerary', this)">📅 行程規劃</button>
-    <button class="tab-btn" onclick="switchTab('budget', this)">💴 費用記帳</button>
-    <button class="tab-btn" onclick="switchTab('packing', this)">🎒 打包清單</button>
+    <button class="tab-btn active" onclick="switchTab('itinerary',this)">📅 行程規劃</button>
+    <button class="tab-btn" onclick="switchTab('budget',this)">💴 費用記帳</button>
+    <button class="tab-btn" onclick="switchTab('packing',this)">🎒 打包清單</button>
   </div>
 </header>
 
 <main>
-
-  <!-- ── 行程 Tab ── -->
   <div class="tab-panel active" id="tab-itinerary">
     <div id="days-container"></div>
     <div class="add-day-bar">
@@ -809,7 +193,6 @@
     </div>
   </div>
 
-  <!-- ── 費用 Tab ── -->
   <div class="tab-panel" id="tab-budget">
     <div class="budget-summary">
       <h3>📊 費用分類總覽</h3>
@@ -820,42 +203,26 @@
       </div>
     </div>
     <div class="expense-list">
-      <h3>
-        明細清單
-        <span style="font-size:0.8rem;color:var(--text-light);font-weight:400;">依日期排列</span>
-      </h3>
+      <h3>明細清單 <span style="font-size:.8rem;color:var(--text-light);font-weight:400">依日期排列</span></h3>
       <table class="expense-table">
-        <thead>
-          <tr>
-            <th>日期</th>
-            <th>景點/活動</th>
-            <th>類型</th>
-            <th>金額 (¥)</th>
-          </tr>
-        </thead>
+        <thead><tr><th>日期</th><th>景點/活動</th><th>類型</th><th>金額 (¥)</th></tr></thead>
         <tbody id="expense-tbody"></tbody>
       </table>
     </div>
   </div>
 
-  <!-- ── 打包清單 Tab ── -->
   <div class="tab-panel" id="tab-packing">
     <div id="pack-container"></div>
   </div>
-
 </main>
 
-<!-- ── 新增/編輯景點 Modal ── -->
+<!-- Stop Modal -->
 <div class="modal-overlay" id="stopModal">
   <div class="modal">
     <h2 id="stopModalTitle">新增景點</h2>
     <div class="form-row">
-      <div class="form-group">
-        <label>時間</label>
-        <input type="time" id="stopTime" value="09:00">
-      </div>
-      <div class="form-group">
-        <label>類型</label>
+      <div class="form-group"><label>時間</label><input type="time" id="stopTime" value="09:00"></div>
+      <div class="form-group"><label>類型</label>
         <select id="stopCategory">
           <option value="sight">🏯 景點</option>
           <option value="food">🍜 餐廳</option>
@@ -865,22 +232,10 @@
         </select>
       </div>
     </div>
-    <div class="form-group">
-      <label>名稱 *</label>
-      <input type="text" id="stopName" placeholder="例：淺草寺">
-    </div>
-    <div class="form-group">
-      <label>地址（用於 Google 地圖）</label>
-      <input type="text" id="stopAddress" placeholder="例：東京都台東區淺草2丁目3-1">
-    </div>
-    <div class="form-group">
-      <label>備註</label>
-      <textarea id="stopNote" rows="2" placeholder="可寫開放時間、注意事項等..."></textarea>
-    </div>
-    <div class="form-group">
-      <label>費用 (日圓 ¥)</label>
-      <input type="number" id="stopCost" placeholder="0" min="0">
-    </div>
+    <div class="form-group"><label>名稱 *</label><input type="text" id="stopName" placeholder="例：淺草寺"></div>
+    <div class="form-group"><label>地址（用於 Google 地圖）</label><input type="text" id="stopAddress" placeholder="例：東京都台東區淺草2丁目3-1"></div>
+    <div class="form-group"><label>備註</label><textarea id="stopNote" rows="2" placeholder="開放時間、注意事項..."></textarea></div>
+    <div class="form-group"><label>費用 (日圓 ¥)</label><input type="number" id="stopCost" placeholder="0" min="0"></div>
     <div class="modal-actions">
       <button class="btn-danger" id="stopDeleteBtn" onclick="deleteStop()" style="display:none">刪除</button>
       <button class="btn-secondary" onclick="closeStopModal()">取消</button>
@@ -889,22 +244,13 @@
   </div>
 </div>
 
-<!-- ── 新增一天 Modal ── -->
+<!-- Day Modal -->
 <div class="modal-overlay" id="dayModal">
-  <div class="modal modal-day">
+  <div class="modal" style="max-width:380px">
     <h2 id="dayModalTitle">新增一天</h2>
-    <div class="form-group">
-      <label>日期</label>
-      <input type="date" id="dayDate">
-    </div>
-    <div class="form-group">
-      <label>城市/地點</label>
-      <input type="text" id="dayCity" placeholder="例：東京">
-    </div>
-    <div class="form-group">
-      <label>當日主題（可選）</label>
-      <input type="text" id="dayTheme" placeholder="例：探索淺草文化">
-    </div>
+    <div class="form-group"><label>日期</label><input type="date" id="dayDate"></div>
+    <div class="form-group"><label>城市/地點</label><input type="text" id="dayCity" placeholder="例：東京"></div>
+    <div class="form-group"><label>當日主題（可選）</label><input type="text" id="dayTheme" placeholder="例：探索淺草文化"></div>
     <div class="modal-actions">
       <button class="btn-danger" id="dayDeleteBtn" onclick="deleteDay()" style="display:none">刪除此天</button>
       <button class="btn-secondary" onclick="closeDayModal()">取消</button>
@@ -916,11 +262,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  DATA
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-// ── Firebase 初始化 ──
+// ── Firebase 設定 ──
 const firebaseConfig = {
   apiKey: "AIzaSyAwA1RVbXqaCJh3PR0I_tOkQxTljhhRdfI",
   authDomain: "japan-trip-2fa53.firebaseapp.com",
@@ -938,106 +280,95 @@ function setSyncStatus(status) {
   const chip = document.getElementById('syncChip');
   const label = document.getElementById('syncLabel');
   chip.className = 'sync-chip ' + status;
-  label.textContent = status === 'online' ? '已同步' : status === 'syncing' ? '同步中...' : '離線';
+  label.textContent = { online: '已同步', syncing: '同步中...', offline: '離線' }[status] || '';
 }
 
+// ── 預設資料 ──
 const DEFAULT_DATA = {
   days: [
-    {
-      id: 'd1', date: '2026-07-20', city: '東京', theme: '抵達！探索淺草',
-      stops: [
-        { id: 's1', time: '14:00', name: '成田機場 第一航廈', category: 'transport', address: '成田国際空港 第1旅客ターミナル', note: '入境、換JR票、領預付SIM卡', cost: 0 },
-        { id: 's2', time: '17:30', name: '淺草寺', category: 'sight', address: '東京都台東区浅草2丁目3-1', note: '全日本最古老寺廟，仲見世通好好逛！', cost: 0 },
-        { id: 's3', time: '19:30', name: '淺草食堂街（雷門旁）', category: 'food', address: '東京都台東区浅草1丁目', note: '試試天婦羅、人形燒', cost: 2000 },
-        { id: 's4', time: '21:00', name: 'Dormy Inn 淺草', category: 'hotel', address: '東京都台東区駒形2-12-12', note: '有天然溫泉大浴場！', cost: 15000 }
-      ]
-    },
-    {
-      id: 'd2', date: '2026-07-21', city: '東京', theme: '原宿・涉谷・新宿',
-      stops: [
-        { id: 's5', time: '09:30', name: '明治神宮', category: 'sight', address: '東京都渋谷区代々木神園町1-1', note: '免費入場，感受日式神社氣氛', cost: 0 },
-        { id: 's6', time: '11:00', name: '竹下通 原宿', category: 'sight', address: '東京都渋谷区神宮前1丁目', note: '可愛小店、可麗餅必吃！', cost: 1500 },
-        { id: 's7', time: '13:30', name: '一蘭拉麵 涉谷店', category: 'food', address: '東京都渋谷区道玄坂2-29-11', note: '一人一格，孩子通常很喜歡', cost: 5000 },
-        { id: 's8', time: '15:00', name: '涉谷 SCRAMBLE SQUARE 展望台', category: 'sight', address: '東京都渋谷区渋谷2-24-12', note: '360度俯瞰東京！大人 ¥2000', cost: 6000 }
-      ]
-    },
-    {
-      id: 'd3', date: '2026-07-22', city: '箱根', theme: '溫泉・富士山展望',
-      stops: [
-        { id: 's9', time: '08:30', name: '新宿 → 箱根湯本（小田急箱根特急）', category: 'transport', address: '新宿駅 小田急線', note: 'Romancecar 快速又舒適，需提前訂位', cost: 4000 },
-        { id: 's10', time: '11:00', name: '箱根神社', category: 'sight', address: '神奈川県足柄下郡箱根町元箱根80-1', note: '湖中鳥居超美，必拍！', cost: 0 },
-        { id: 's11', time: '13:00', name: '大涌谷（火山地熱景觀）', category: 'sight', address: '神奈川県足柄下郡箱根町仙石原1251', note: '黑蛋一顆¥180，吃了延壽7年😄', cost: 900 },
-        { id: 's12', time: '17:00', name: '箱根 翠松園 溫泉旅館', category: 'hotel', address: '神奈川県足柄下郡箱根町塔ノ澤19', note: '含晚餐早餐，露天溫泉！', cost: 45000 }
-      ]
-    },
-    {
-      id: 'd4', date: '2026-07-23', city: '京都', theme: '金閣寺・嵐山',
-      stops: [
-        { id: 's13', time: '09:00', name: '箱根 → 新大阪 → 京都（新幹線）', category: 'transport', address: '小田原駅 → 京都駅 新幹線', note: '持JR Pass免費！約2.5小時', cost: 0 },
-        { id: 's14', time: '12:30', name: '金閣寺', category: 'sight', address: '京都府京都市北区金閣寺町1', note: '票價 ¥500/人，金碧輝煌絕對值得', cost: 2000 },
-        { id: 's15', time: '15:00', name: '嵐山竹林小徑', category: 'sight', address: '京都府京都市右京区嵯峨小倉山田淵山町', note: '黃昏光線最美，記得帶相機', cost: 0 },
-        { id: 's16', time: '18:30', name: '湯豆腐料理（南禪寺附近）', category: 'food', address: '京都府京都市左京区南禅寺福地町86-30', note: '京都傳統料理，清淡健康', cost: 6000 }
-      ]
-    },
-    {
-      id: 'd5', date: '2026-07-24', city: '大阪', theme: '道頓堀・美食收尾',
-      stops: [
-        { id: 's17', time: '10:00', name: '錦市場（京都廚房）', category: 'food', address: '京都府京都市中京区錦小路通', note: '各種京都小吃，章魚燒、玉子燒', cost: 3000 },
-        { id: 's18', name: '道頓堀', time: '14:00', category: 'sight', address: '大阪府大阪市中央区道頓堀', note: '格力高大叔跑跑、拍照留念', cost: 0 },
-        { id: 's19', time: '16:00', name: '一風堂大阪道頓堀店', category: 'food', address: '大阪府大阪市中央区宗右衛門町7-21', note: '回味最後一頓日本拉麵', cost: 5000 },
-        { id: 's20', time: '19:00', name: '關西機場 KIX 出發', category: 'transport', address: '大阪府泉佐野市泉州空港北1', note: '提早3小時到機場辦理退稅！', cost: 0 }
-      ]
-    }
+    { id:'d1', date:'2026-07-20', city:'東京', theme:'抵達！探索淺草', stops:[
+      { id:'s1', time:'14:00', name:'成田機場 第一航廈', category:'transport', address:'成田国際空港 第1旅客ターミナル', note:'入境、換JR票、領預付SIM卡', cost:0 },
+      { id:'s2', time:'17:30', name:'淺草寺', category:'sight', address:'東京都台東区浅草2丁目3-1', note:'全日本最古老寺廟，仲見世通好好逛！', cost:0 },
+      { id:'s3', time:'19:30', name:'淺草食堂街（雷門旁）', category:'food', address:'東京都台東区浅草1丁目', note:'試試天婦羅、人形燒', cost:2000 },
+      { id:'s4', time:'21:00', name:'Dormy Inn 淺草', category:'hotel', address:'東京都台東区駒形2-12-12', note:'有天然溫泉大浴場！', cost:15000 }
+    ]},
+    { id:'d2', date:'2026-07-21', city:'東京', theme:'原宿・涉谷・新宿', stops:[
+      { id:'s5', time:'09:30', name:'明治神宮', category:'sight', address:'東京都渋谷区代々木神園町1-1', note:'免費入場，感受日式神社氣氛', cost:0 },
+      { id:'s6', time:'11:00', name:'竹下通 原宿', category:'sight', address:'東京都渋谷区神宮前1丁目', note:'可愛小店、可麗餅必吃！', cost:1500 },
+      { id:'s7', time:'13:30', name:'一蘭拉麵 涉谷店', category:'food', address:'東京都渋谷区道玄坂2-29-11', note:'一人一格，孩子通常很喜歡', cost:5000 },
+      { id:'s8', time:'15:00', name:'涉谷 SCRAMBLE SQUARE 展望台', category:'sight', address:'東京都渋谷区渋谷2-24-12', note:'360度俯瞰東京！', cost:6000 }
+    ]},
+    { id:'d3', date:'2026-07-22', city:'箱根', theme:'溫泉・富士山展望', stops:[
+      { id:'s9', time:'08:30', name:'新宿 → 箱根湯本（小田急）', category:'transport', address:'新宿駅 小田急線', note:'Romancecar 快速舒適，需提前訂位', cost:4000 },
+      { id:'s10', time:'11:00', name:'箱根神社', category:'sight', address:'神奈川県足柄下郡箱根町元箱根80-1', note:'湖中鳥居超美，必拍！', cost:0 },
+      { id:'s11', time:'13:00', name:'大涌谷（火山地熱景觀）', category:'sight', address:'神奈川県足柄下郡箱根町仙石原1251', note:'黑蛋一顆¥180，吃了延壽7年😄', cost:900 },
+      { id:'s12', time:'17:00', name:'箱根 翠松園 溫泉旅館', category:'hotel', address:'神奈川県足柄下郡箱根町塔ノ澤19', note:'含晚餐早餐，露天溫泉！', cost:45000 }
+    ]},
+    { id:'d4', date:'2026-07-23', city:'京都', theme:'金閣寺・嵐山', stops:[
+      { id:'s13', time:'09:00', name:'箱根 → 京都（新幹線）', category:'transport', address:'小田原駅 → 京都駅 新幹線', note:'持JR Pass免費！約2.5小時', cost:0 },
+      { id:'s14', time:'12:30', name:'金閣寺', category:'sight', address:'京都府京都市北区金閣寺町1', note:'票價¥500/人，金碧輝煌絕對值得', cost:2000 },
+      { id:'s15', time:'15:00', name:'嵐山竹林小徑', category:'sight', address:'京都府京都市右京区嵯峨小倉山田淵山町', note:'黃昏光線最美，記得帶相機', cost:0 },
+      { id:'s16', time:'18:30', name:'湯豆腐料理（南禪寺附近）', category:'food', address:'京都府京都市左京区南禅寺福地町86-30', note:'京都傳統料理，清淡健康', cost:6000 }
+    ]},
+    { id:'d5', date:'2026-07-24', city:'大阪', theme:'道頓堀・美食收尾', stops:[
+      { id:'s17', time:'10:00', name:'錦市場（京都廚房）', category:'food', address:'京都府京都市中京区錦小路通', note:'各種京都小吃', cost:3000 },
+      { id:'s18', time:'14:00', name:'道頓堀', category:'sight', address:'大阪府大阪市中央区道頓堀', note:'格力高大叔跑跑、拍照留念', cost:0 },
+      { id:'s19', time:'16:00', name:'一風堂大阪道頓堀店', category:'food', address:'大阪府大阪市中央区宗右衛門町7-21', note:'回味最後一頓日本拉麵', cost:5000 },
+      { id:'s20', time:'19:00', name:'關西機場 KIX 出發', category:'transport', address:'大阪府泉佐野市泉州空港北1', note:'提早3小時到機場辦理退稅！', cost:0 }
+    ]}
   ],
   packing: [
-    { id: 'cat1', name: '🛂 重要文件', items: [
-      { id: 'p1', name: '護照（有效期6個月以上）', checked: false },
-      { id: 'p2', name: '機票電子票（截圖備用）', checked: false },
-      { id: 'p3', name: '旅館訂房確認信', checked: false },
-      { id: 'p4', name: '旅遊保險單', checked: false },
-      { id: 'p5', name: 'JR Pass（入境後換票）', checked: false }
+    { id:'cat1', name:'🛂 重要文件', items:[
+      { id:'p1', name:'護照（有效期6個月以上）', checked:false },
+      { id:'p2', name:'機票電子票（截圖備用）', checked:false },
+      { id:'p3', name:'旅館訂房確認信', checked:false },
+      { id:'p4', name:'旅遊保險單', checked:false },
+      { id:'p5', name:'JR Pass（入境後換票）', checked:false }
     ]},
-    { id: 'cat2', name: '📱 3C & 電子', items: [
-      { id: 'p6', name: '手機 + 充電線', checked: false },
-      { id: 'p7', name: '萬用轉接插頭（日本A型）', checked: false },
-      { id: 'p8', name: '行動電源', checked: false },
-      { id: 'p9', name: '相機 + 記憶卡', checked: false },
-      { id: 'p10', name: 'SIM卡 或 WiFi機', checked: false }
+    { id:'cat2', name:'📱 3C & 電子', items:[
+      { id:'p6', name:'手機 + 充電線', checked:false },
+      { id:'p7', name:'萬用轉接插頭（日本A型）', checked:false },
+      { id:'p8', name:'行動電源', checked:false },
+      { id:'p9', name:'相機 + 記憶卡', checked:false },
+      { id:'p10', name:'SIM卡 或 WiFi機', checked:false }
     ]},
-    { id: 'cat3', name: '👕 衣物', items: [
-      { id: 'p11', name: '換洗衣物 x5套', checked: false },
-      { id: 'p12', name: '舒適步行鞋', checked: false },
-      { id: 'p13', name: '輕薄外套（室內冷氣強）', checked: false },
-      { id: 'p14', name: '雨傘或折疊雨衣', checked: false },
-      { id: 'p15', name: '涼鞋（溫泉旅館用）', checked: false }
+    { id:'cat3', name:'👕 衣物', items:[
+      { id:'p11', name:'換洗衣物 x5套', checked:false },
+      { id:'p12', name:'舒適步行鞋', checked:false },
+      { id:'p13', name:'輕薄外套（室內冷氣強）', checked:false },
+      { id:'p14', name:'雨傘或折疊雨衣', checked:false },
+      { id:'p15', name:'涼鞋（溫泉旅館用）', checked:false }
     ]},
-    { id: 'cat4', name: '💊 醫療保健', items: [
-      { id: 'p16', name: '常備藥（感冒、腸胃、退燒）', checked: false },
-      { id: 'p17', name: '防蚊液 / 防曬乳', checked: false },
-      { id: 'p18', name: '口罩（搭乘交通工具）', checked: false },
-      { id: 'p19', name: '兒童備用藥', checked: false }
+    { id:'cat4', name:'💊 醫療保健', items:[
+      { id:'p16', name:'常備藥（感冒、腸胃、退燒）', checked:false },
+      { id:'p17', name:'防蚊液 / 防曬乳', checked:false },
+      { id:'p18', name:'口罩（搭乘交通工具）', checked:false },
+      { id:'p19', name:'兒童備用藥', checked:false }
     ]},
-    { id: 'cat5', name: '🎒 行李必備', items: [
-      { id: 'p20', name: '可摺疊購物袋（掃貨用）', checked: false },
-      { id: 'p21', name: '日幣現金（部分店不收卡）', checked: false },
-      { id: 'p22', name: '小零食（孩子在路上吃）', checked: false },
-      { id: 'p23', name: '行李秤（回程怕超重）', checked: false }
+    { id:'cat5', name:'🎒 行李必備', items:[
+      { id:'p20', name:'可摺疊購物袋（掃貨用）', checked:false },
+      { id:'p21', name:'日幣現金（部分店不收卡）', checked:false },
+      { id:'p22', name:'小零食（孩子在路上吃）', checked:false },
+      { id:'p23', name:'行李秤（回程怕超重）', checked:false }
     ]}
   ]
 };
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  STATE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ── 狀態 ──
+let data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+let editingStopId = null, editingDayId = null, editingStopDayId = null;
 
-let data;
-let editingStopId = null;
-let editingDayId = null;
-let editingStopDayId = null;
-
-function loadData() {
-  // 初始設預設資料，等 Firebase 回傳後覆蓋
-  data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+// ── Firebase 陣列轉換（Firebase 會把陣列存成物件） ──
+function toArr(v) {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+  return Object.values(v);
+}
+function normalizeData(raw) {
+  return {
+    days: toArr(raw.days).map(d => ({ ...d, stops: toArr(d.stops) })),
+    packing: toArr(raw.packing).map(c => ({ ...c, items: toArr(c.items) }))
+  };
 }
 
 function saveData() {
@@ -1047,542 +378,327 @@ function saveData() {
     .catch(() => setSyncStatus('offline'));
 }
 
-function uid() {
-  return '_' + Math.random().toString(36).slice(2, 9);
-}
+function uid() { return '_' + Math.random().toString(36).slice(2,9); }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  RENDER
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function render() {
-  renderHeader();
-  renderItinerary();
-  renderBudget();
-  renderPacking();
-}
+// ── 渲染 ──
+function render() { renderHeader(); renderItinerary(); }
 
 function renderHeader() {
-  const days = data.days;
+  const days = data.days || [];
   document.getElementById('totalDays').textContent = days.length;
-  const stops = days.reduce((a, d) => a + d.stops.length, 0);
+  const stops = days.reduce((a,d) => a + (d.stops||[]).length, 0);
   document.getElementById('totalStops').textContent = stops;
-  const total = days.reduce((a, d) => a + d.stops.reduce((b, s) => b + (s.cost || 0), 0), 0);
+  const total = days.reduce((a,d) => a + (d.stops||[]).reduce((b,s) => b+(s.cost||0),0), 0);
   document.getElementById('totalBudget').textContent = total.toLocaleString();
-
   if (days.length > 0) {
-    const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date));
-    document.getElementById('tripDateRange').textContent =
-      formatDate(sorted[0].date) + ' ～ ' + formatDate(sorted[sorted.length - 1].date);
+    const sorted = [...days].sort((a,b) => a.date.localeCompare(b.date));
+    document.getElementById('tripDateRange').textContent = formatDate(sorted[0].date) + ' ～ ' + formatDate(sorted[sorted.length-1].date);
   } else {
     document.getElementById('tripDateRange').textContent = '尚未設定日期';
   }
 }
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' });
+function formatDate(s) {
+  const d = new Date(s + 'T12:00:00');
+  return d.toLocaleDateString('zh-TW', { month:'long', day:'numeric' });
 }
 
 function renderItinerary() {
-  const container = document.getElementById('days-container');
-  if (!data.days.length) {
-    container.innerHTML = `<div class="empty-state"><div class="emoji">✈️</div><p>還沒有行程，點擊下方「新增一天」開始規劃吧！</p></div>`;
+  const c = document.getElementById('days-container');
+  const days = data.days || [];
+  if (!days.length) {
+    c.innerHTML = '<div class="empty-state"><div class="emoji">✈️</div><p>還沒有行程，點擊下方「新增一天」開始規劃吧！</p></div>';
     return;
   }
-
-  const sorted = [...data.days].sort((a, b) => a.date.localeCompare(b.date));
-
-  container.innerHTML = sorted.map((day, idx) => {
-    const dayNum = idx + 1;
-    const dayCost = day.stops.reduce((a, s) => a + (s.cost || 0), 0);
-    const dateObj = new Date(day.date + 'T12:00:00');
-    const dateLabel = dateObj.toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' });
-    const cityForWeather = encodeURIComponent(day.city || '東京');
-    const weatherUrl = `https://www.google.com/search?q=${cityForWeather}+天氣`;
-
-    return `
-    <div class="day-section" id="day-${day.id}">
+  const sorted = [...days].sort((a,b) => a.date.localeCompare(b.date));
+  c.innerHTML = sorted.map((day, idx) => {
+    const dayCost = (day.stops||[]).reduce((a,s) => a+(s.cost||0), 0);
+    const dateLabel = new Date(day.date+'T12:00:00').toLocaleDateString('zh-TW',{month:'long',day:'numeric',weekday:'short'});
+    const weatherUrl = 'https://www.google.com/search?q=' + encodeURIComponent((day.city||'東京')+'天氣');
+    return `<div class="day-section" id="day-${day.id}">
       <div class="day-header" onclick="toggleDay('${day.id}')">
         <div class="day-header-left">
-          <span class="day-badge">Day ${dayNum}</span>
+          <span class="day-badge">Day ${idx+1}</span>
           <div>
-            <div class="day-title">${escHtml(day.city)}${day.theme ? ' · ' + escHtml(day.theme) : ''}</div>
+            <div class="day-title">${esc(day.city)}${day.theme?' · '+esc(day.theme):''}</div>
             <div class="day-meta">${dateLabel}</div>
           </div>
         </div>
         <div class="day-header-right">
-          ${dayCost > 0 ? `<span class="day-cost-pill">¥${dayCost.toLocaleString()}</span>` : ''}
+          ${dayCost>0?`<span class="day-cost-pill">¥${dayCost.toLocaleString()}</span>`:''}
           <a class="weather-btn" href="${weatherUrl}" target="_blank" onclick="event.stopPropagation()">🌤️ 天氣</a>
-          <button class="add-stop-btn" onclick="event.stopPropagation(); openAddStopModal('${day.id}')">＋ 新增景點</button>
-          <button class="icon-btn" onclick="event.stopPropagation(); openEditDayModal('${day.id}')" title="編輯此天">✏️</button>
+          <button class="add-stop-btn" onclick="event.stopPropagation();openAddStopModal('${day.id}')">＋ 新增景點</button>
+          <button class="icon-btn" onclick="event.stopPropagation();openEditDayModal('${day.id}')" title="編輯">✏️</button>
           <span class="collapse-icon">▾</span>
         </div>
       </div>
       <div class="stops-list">
-        ${day.stops.length === 0
-          ? `<div style="text-align:center;padding:20px;color:var(--text-light);font-size:0.85rem;">這天還沒有行程，點「新增景點」加入！</div>`
-          : day.stops.map((s, si) => renderStop(s, day.id, si === day.stops.length - 1)).join('')
-        }
+        ${!(day.stops&&day.stops.length)
+          ? '<div style="text-align:center;padding:20px;color:var(--text-light);font-size:.85rem">這天還沒有行程！</div>'
+          : (day.stops||[]).map((s,si) => renderStop(s, day.id, si===day.stops.length-1)).join('')}
       </div>
     </div>`;
   }).join('');
 }
 
 function renderStop(s, dayId, isLast) {
-  const catLabels = { sight: '🏯 景點', food: '🍜 餐廳', hotel: '🏨 住宿', transport: '🚄 交通', other: '📌 其他' };
-  const catClass = { sight: 'cat-sight', food: 'cat-food', hotel: 'cat-hotel', transport: 'cat-transport', other: 'cat-other' };
-  const mapUrl = s.address
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address)}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name)}`;
-
-  return `
-  <div class="stop-item">
-    <div class="stop-time-col">
-      <span class="stop-time">${s.time || '--:--'}</span>
-    </div>
+  const catLabel = {sight:'🏯 景點',food:'🍜 餐廳',hotel:'🏨 住宿',transport:'🚄 交通',other:'📌 其他'};
+  const catClass = {sight:'cat-sight',food:'cat-food',hotel:'cat-hotel',transport:'cat-transport',other:'cat-other'};
+  const mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.address||s.name);
+  return `<div class="stop-item">
+    <div class="stop-time-col"><span class="stop-time">${s.time||'--:--'}</span></div>
     <div class="stop-icon-col">
       <div class="stop-dot"></div>
-      ${!isLast ? '<div class="stop-line"></div>' : ''}
+      ${!isLast?'<div class="stop-line"></div>':''}
     </div>
     <div class="stop-content">
-      <div>
-        <span class="stop-name">${escHtml(s.name)}</span>
-        <span class="stop-category-tag ${catClass[s.category] || 'cat-other'}">${catLabels[s.category] || s.category}</span>
+      <div><span class="stop-name">${esc(s.name)}</span>
+        <span class="stop-category-tag ${catClass[s.category]||'cat-other'}">${catLabel[s.category]||s.category}</span>
       </div>
-      ${s.note ? `<div class="stop-note">${escHtml(s.note)}</div>` : ''}
+      ${s.note?`<div class="stop-note">${esc(s.note)}</div>`:''}
       <a class="map-link" href="${mapUrl}" target="_blank">📍 在 Google 地圖上查看</a>
     </div>
     <div class="stop-actions">
-      ${s.cost > 0 ? `<span class="stop-cost">¥${s.cost.toLocaleString()}</span>` : ''}
-      <button class="icon-btn" onclick="openEditStopModal('${dayId}', '${s.id}')" title="編輯">✏️</button>
+      ${s.cost>0?`<span class="stop-cost">¥${s.cost.toLocaleString()}</span>`:''}
+      <button class="icon-btn" onclick="openEditStopModal('${dayId}','${s.id}')">✏️</button>
     </div>
   </div>`;
 }
 
 function renderBudget() {
   const cats = [
-    { key: 'sight', label: '景點門票', color: '#4caf7d', icon: '🏯' },
-    { key: 'food',  label: '餐飲',     color: '#ff9800', icon: '🍜' },
-    { key: 'hotel', label: '住宿',     color: '#5b9bd5', icon: '🏨' },
-    { key: 'transport', label: '交通', color: '#9c27b0', icon: '🚄' },
-    { key: 'other', label: '其他',     color: '#78909c', icon: '📌' }
+    {key:'sight',label:'景點門票',color:'#4caf7d',icon:'🏯'},
+    {key:'food',label:'餐飲',color:'#ff9800',icon:'🍜'},
+    {key:'hotel',label:'住宿',color:'#5b9bd5',icon:'🏨'},
+    {key:'transport',label:'交通',color:'#9c27b0',icon:'🚄'},
+    {key:'other',label:'其他',color:'#78909c',icon:'📌'}
   ];
-
-  let allStops = [];
-  data.days.forEach(d => d.stops.forEach(s => allStops.push({ ...s, dayDate: d.date, dayCity: d.city })));
-
-  const totals = {};
-  cats.forEach(c => totals[c.key] = 0);
-  allStops.forEach(s => {
-    if (totals[s.category] !== undefined) totals[s.category] += (s.cost || 0);
-    else totals['other'] = (totals['other'] || 0) + (s.cost || 0);
-  });
-  const grand = Object.values(totals).reduce((a, b) => a + b, 0);
+  const allStops = [];
+  (data.days||[]).forEach(d => (d.stops||[]).forEach(s => allStops.push({...s,dayDate:d.date,dayCity:d.city})));
+  const totals = {}; cats.forEach(c => totals[c.key]=0);
+  allStops.forEach(s => { totals[s.category]!=null ? totals[s.category]+=(s.cost||0) : totals.other+=(s.cost||0); });
+  const grand = Object.values(totals).reduce((a,b)=>a+b,0);
   document.getElementById('grand-total').textContent = grand.toLocaleString();
-
-  const barsEl = document.getElementById('budget-bars');
-  barsEl.innerHTML = cats.map(c => {
-    const pct = grand > 0 ? Math.round(totals[c.key] / grand * 100) : 0;
-    return `
-    <div class="budget-row">
+  document.getElementById('budget-bars').innerHTML = cats.map(c => {
+    const pct = grand>0?Math.round(totals[c.key]/grand*100):0;
+    return `<div class="budget-row">
       <span class="budget-label">${c.icon} ${c.label}</span>
-      <div class="budget-bar-wrap">
-        <div class="budget-bar-fill" style="width:${pct}%;background:${c.color}"></div>
-      </div>
+      <div class="budget-bar-wrap"><div class="budget-bar-fill" style="width:${pct}%;background:${c.color}"></div></div>
       <span class="budget-amount">¥${totals[c.key].toLocaleString()}</span>
     </div>`;
   }).join('');
-
-  const tbody = document.getElementById('expense-tbody');
-  const withCost = allStops.filter(s => s.cost > 0)
-    .sort((a, b) => a.dayDate.localeCompare(b.dayDate));
-
-  if (withCost.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:24px">尚無費用記錄</td></tr>`;
-    return;
-  }
-
-  const catIcons = { sight: '🏯', food: '🍜', hotel: '🏨', transport: '🚄', other: '📌' };
-  tbody.innerHTML = withCost.map(s => {
-    const dateObj = new Date(s.dayDate + 'T12:00:00');
-    const dateLabel = dateObj.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
-    return `
-    <tr>
-      <td>${dateLabel} ${escHtml(s.dayCity)}</td>
-      <td>${escHtml(s.name)}</td>
-      <td>${catIcons[s.category] || '📌'}</td>
-      <td>¥${(s.cost || 0).toLocaleString()}</td>
-    </tr>`;
-  }).join('');
+  const withCost = allStops.filter(s=>s.cost>0).sort((a,b)=>a.dayDate.localeCompare(b.dayDate));
+  const catIcons = {sight:'🏯',food:'🍜',hotel:'🏨',transport:'🚄',other:'📌'};
+  document.getElementById('expense-tbody').innerHTML = !withCost.length
+    ? '<tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:24px">尚無費用記錄</td></tr>'
+    : withCost.map(s => {
+        const dl = new Date(s.dayDate+'T12:00:00').toLocaleDateString('zh-TW',{month:'short',day:'numeric'});
+        return `<tr><td>${dl} ${esc(s.dayCity)}</td><td>${esc(s.name)}</td><td>${catIcons[s.category]||'📌'}</td><td>¥${(s.cost||0).toLocaleString()}</td></tr>`;
+      }).join('');
 }
 
 function renderPacking() {
-  const container = document.getElementById('pack-container');
-  container.innerHTML = data.packing.map(cat => {
-    const checked = cat.items.filter(i => i.checked).length;
-    const total = cat.items.length;
-    const pct = total > 0 ? Math.round(checked / total * 100) : 0;
-
-    return `
-    <div class="pack-section">
+  document.getElementById('pack-container').innerHTML = (data.packing||[]).map(cat => {
+    const checked = (cat.items||[]).filter(i=>i.checked).length;
+    const total = (cat.items||[]).length;
+    const pct = total>0?Math.round(checked/total*100):0;
+    return `<div class="pack-section">
       <div class="pack-section-header">
-        <div class="pack-section-title">
-          ${escHtml(cat.name)}
-          <span class="pack-progress">${checked}/${total}</span>
-        </div>
+        <div class="pack-section-title">${esc(cat.name)}<span class="pack-progress">${checked}/${total}</span></div>
         <button class="section-action-btn" onclick="checkAllInCat('${cat.id}')">全選</button>
       </div>
       <div class="pack-prog-bar"><div class="pack-prog-fill" style="width:${pct}%"></div></div>
       <div class="pack-items">
-        ${cat.items.map(item => `
-        <div class="pack-item${item.checked ? ' checked' : ''}" onclick="togglePackItem('${cat.id}', '${item.id}')">
-          <div class="pack-checkbox">${item.checked ? '✓' : ''}</div>
-          <span class="pack-item-name">${escHtml(item.name)}</span>
-          <button class="icon-btn" onclick="event.stopPropagation(); deletePackItem('${cat.id}', '${item.id}')" title="刪除">✕</button>
+        ${(cat.items||[]).map(item => `
+        <div class="pack-item${item.checked?' checked':''}" onclick="togglePackItem('${cat.id}','${item.id}')">
+          <div class="pack-checkbox">${item.checked?'✓':''}</div>
+          <span class="pack-item-name">${esc(item.name)}</span>
+          <button class="icon-btn" onclick="event.stopPropagation();deletePackItem('${cat.id}','${item.id}')">✕</button>
         </div>`).join('')}
       </div>
       <div class="pack-add-row">
         <input class="pack-add-input" type="text" placeholder="新增物品..." id="packInput-${cat.id}"
-          onkeydown="if(event.key==='Enter') addPackItem('${cat.id}')">
+          onkeydown="if(event.key==='Enter')addPackItem('${cat.id}')">
         <button class="pack-add-submit" onclick="addPackItem('${cat.id}')">＋</button>
       </div>
     </div>`;
   }).join('');
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  TAB SWITCHING
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+// ── Tab ──
 function switchTab(tab, btn) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('tab-' + tab).classList.add('active');
-  if (tab === 'budget') renderBudget();
+  document.getElementById('tab-'+tab).classList.add('active');
+  if (tab==='budget') renderBudget();
+  if (tab==='packing') renderPacking();
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  DAY COLLAPSE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function toggleDay(id) { document.getElementById('day-'+id).classList.toggle('collapsed'); }
 
-function toggleDay(dayId) {
-  const el = document.getElementById('day-' + dayId);
-  el.classList.toggle('collapsed');
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  STOP MODAL
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+// ── Stop Modal ──
 function openAddStopModal(dayId) {
-  editingStopId = null;
-  editingStopDayId = dayId;
-  document.getElementById('stopModalTitle').textContent = '新增景點';
-  document.getElementById('stopName').value = '';
-  document.getElementById('stopAddress').value = '';
-  document.getElementById('stopNote').value = '';
-  document.getElementById('stopCost').value = '';
-  document.getElementById('stopTime').value = '09:00';
-  document.getElementById('stopCategory').value = 'sight';
-  document.getElementById('stopDeleteBtn').style.display = 'none';
+  editingStopId=null; editingStopDayId=dayId;
+  document.getElementById('stopModalTitle').textContent='新增景點';
+  ['stopName','stopAddress','stopNote','stopCost'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('stopTime').value='09:00';
+  document.getElementById('stopCategory').value='sight';
+  document.getElementById('stopDeleteBtn').style.display='none';
   document.getElementById('stopModal').classList.add('open');
 }
-
 function openEditStopModal(dayId, stopId) {
-  editingStopId = stopId;
-  editingStopDayId = dayId;
-  const day = data.days.find(d => d.id === dayId);
-  const stop = day.stops.find(s => s.id === stopId);
-  document.getElementById('stopModalTitle').textContent = '編輯景點';
-  document.getElementById('stopName').value = stop.name;
-  document.getElementById('stopAddress').value = stop.address || '';
-  document.getElementById('stopNote').value = stop.note || '';
-  document.getElementById('stopCost').value = stop.cost || '';
-  document.getElementById('stopTime').value = stop.time || '09:00';
-  document.getElementById('stopCategory').value = stop.category || 'sight';
-  document.getElementById('stopDeleteBtn').style.display = 'inline-flex';
+  editingStopId=stopId; editingStopDayId=dayId;
+  const day=data.days.find(d=>d.id===dayId);
+  const s=day.stops.find(s=>s.id===stopId);
+  document.getElementById('stopModalTitle').textContent='編輯景點';
+  document.getElementById('stopName').value=s.name;
+  document.getElementById('stopAddress').value=s.address||'';
+  document.getElementById('stopNote').value=s.note||'';
+  document.getElementById('stopCost').value=s.cost||'';
+  document.getElementById('stopTime').value=s.time||'09:00';
+  document.getElementById('stopCategory').value=s.category||'sight';
+  document.getElementById('stopDeleteBtn').style.display='inline-flex';
   document.getElementById('stopModal').classList.add('open');
 }
-
-function closeStopModal() {
-  document.getElementById('stopModal').classList.remove('open');
-}
-
+function closeStopModal() { document.getElementById('stopModal').classList.remove('open'); }
 function saveStop() {
-  const name = document.getElementById('stopName').value.trim();
+  const name=document.getElementById('stopName').value.trim();
   if (!name) { showToast('請輸入景點名稱'); return; }
-
-  const stopData = {
-    name,
-    address: document.getElementById('stopAddress').value.trim(),
-    note: document.getElementById('stopNote').value.trim(),
-    cost: parseInt(document.getElementById('stopCost').value) || 0,
-    time: document.getElementById('stopTime').value,
-    category: document.getElementById('stopCategory').value
-  };
-
-  const day = data.days.find(d => d.id === editingStopDayId);
+  const sd={name,address:document.getElementById('stopAddress').value.trim(),
+    note:document.getElementById('stopNote').value.trim(),
+    cost:parseInt(document.getElementById('stopCost').value)||0,
+    time:document.getElementById('stopTime').value,
+    category:document.getElementById('stopCategory').value};
+  const day=data.days.find(d=>d.id===editingStopDayId);
   if (editingStopId) {
-    const idx = day.stops.findIndex(s => s.id === editingStopId);
-    day.stops[idx] = { ...day.stops[idx], ...stopData };
+    const idx=day.stops.findIndex(s=>s.id===editingStopId);
+    day.stops[idx]={...day.stops[idx],...sd};
     showToast('✅ 景點已更新');
   } else {
-    day.stops.push({ id: uid(), ...stopData });
+    day.stops.push({id:uid(),...sd});
     showToast('✅ 景點已新增');
   }
-
-  saveData();
-  render();
-  closeStopModal();
+  saveData(); render(); closeStopModal();
 }
-
 function deleteStop() {
   if (!confirm('確定要刪除這個景點嗎？')) return;
-  const day = data.days.find(d => d.id === editingStopDayId);
-  day.stops = day.stops.filter(s => s.id !== editingStopId);
-  saveData();
-  render();
-  closeStopModal();
-  showToast('🗑️ 景點已刪除');
+  const day=data.days.find(d=>d.id===editingStopDayId);
+  day.stops=day.stops.filter(s=>s.id!==editingStopId);
+  saveData(); render(); closeStopModal(); showToast('🗑️ 景點已刪除');
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  DAY MODAL
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+// ── Day Modal ──
 function openAddDayModal() {
-  editingDayId = null;
-  document.getElementById('dayModalTitle').textContent = '新增一天';
-  const nextDate = getNextDate();
-  document.getElementById('dayDate').value = nextDate;
-  document.getElementById('dayCity').value = '';
-  document.getElementById('dayTheme').value = '';
-  document.getElementById('dayDeleteBtn').style.display = 'none';
+  editingDayId=null;
+  document.getElementById('dayModalTitle').textContent='新增一天';
+  document.getElementById('dayDate').value=getNextDate();
+  document.getElementById('dayCity').value='';
+  document.getElementById('dayTheme').value='';
+  document.getElementById('dayDeleteBtn').style.display='none';
   document.getElementById('dayModal').classList.add('open');
 }
-
-function openEditDayModal(dayId) {
-  editingDayId = dayId;
-  const day = data.days.find(d => d.id === dayId);
-  document.getElementById('dayModalTitle').textContent = '編輯此天';
-  document.getElementById('dayDate').value = day.date;
-  document.getElementById('dayCity').value = day.city;
-  document.getElementById('dayTheme').value = day.theme || '';
-  document.getElementById('dayDeleteBtn').style.display = 'inline-flex';
+function openEditDayModal(id) {
+  editingDayId=id;
+  const day=data.days.find(d=>d.id===id);
+  document.getElementById('dayModalTitle').textContent='編輯此天';
+  document.getElementById('dayDate').value=day.date;
+  document.getElementById('dayCity').value=day.city;
+  document.getElementById('dayTheme').value=day.theme||'';
+  document.getElementById('dayDeleteBtn').style.display='inline-flex';
   document.getElementById('dayModal').classList.add('open');
 }
-
-function closeDayModal() {
-  document.getElementById('dayModal').classList.remove('open');
-}
-
+function closeDayModal() { document.getElementById('dayModal').classList.remove('open'); }
 function saveDay() {
-  const date = document.getElementById('dayDate').value;
-  const city = document.getElementById('dayCity').value.trim();
-  if (!date || !city) { showToast('請填寫日期和城市'); return; }
-
-  const dayData = { date, city, theme: document.getElementById('dayTheme').value.trim() };
-
+  const date=document.getElementById('dayDate').value;
+  const city=document.getElementById('dayCity').value.trim();
+  if (!date||!city) { showToast('請填寫日期和城市'); return; }
+  const dd={date,city,theme:document.getElementById('dayTheme').value.trim()};
   if (editingDayId) {
-    const idx = data.days.findIndex(d => d.id === editingDayId);
-    data.days[idx] = { ...data.days[idx], ...dayData };
-    showToast('✅ 行程天數已更新');
+    const idx=data.days.findIndex(d=>d.id===editingDayId);
+    data.days[idx]={...data.days[idx],...dd};
+    showToast('✅ 行程已更新');
   } else {
-    data.days.push({ id: uid(), ...dayData, stops: [] });
+    data.days.push({id:uid(),...dd,stops:[]});
     showToast('✅ 已新增一天');
   }
-
-  saveData();
-  render();
-  closeDayModal();
+  saveData(); render(); closeDayModal();
 }
-
 function deleteDay() {
   if (!confirm('確定要刪除這一天（含所有景點）嗎？')) return;
-  data.days = data.days.filter(d => d.id !== editingDayId);
-  saveData();
-  render();
-  closeDayModal();
-  showToast('🗑️ 此天已刪除');
+  data.days=data.days.filter(d=>d.id!==editingDayId);
+  saveData(); render(); closeDayModal(); showToast('🗑️ 此天已刪除');
 }
-
 function getNextDate() {
   if (!data.days.length) return new Date().toISOString().split('T')[0];
-  const sorted = [...data.days].sort((a, b) => a.date.localeCompare(b.date));
-  const last = new Date(sorted[sorted.length - 1].date + 'T12:00:00');
-  last.setDate(last.getDate() + 1);
+  const sorted=[...data.days].sort((a,b)=>a.date.localeCompare(b.date));
+  const last=new Date(sorted[sorted.length-1].date+'T12:00:00');
+  last.setDate(last.getDate()+1);
   return last.toISOString().split('T')[0];
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  PACKING
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+// ── Packing ──
 function togglePackItem(catId, itemId) {
-  const cat = data.packing.find(c => c.id === catId);
-  const item = cat.items.find(i => i.id === itemId);
-  item.checked = !item.checked;
-  saveData();
-  renderPacking();
+  const cat=data.packing.find(c=>c.id===catId);
+  const item=cat.items.find(i=>i.id===itemId);
+  item.checked=!item.checked;
+  saveData(); renderPacking();
 }
-
 function deletePackItem(catId, itemId) {
-  const cat = data.packing.find(c => c.id === catId);
-  cat.items = cat.items.filter(i => i.id !== itemId);
-  saveData();
-  renderPacking();
+  const cat=data.packing.find(c=>c.id===catId);
+  cat.items=cat.items.filter(i=>i.id!==itemId);
+  saveData(); renderPacking();
 }
-
 function addPackItem(catId) {
-  const input = document.getElementById('packInput-' + catId);
-  const name = input.value.trim();
+  const input=document.getElementById('packInput-'+catId);
+  const name=input.value.trim();
   if (!name) return;
-  const cat = data.packing.find(c => c.id === catId);
-  cat.items.push({ id: uid(), name, checked: false });
-  input.value = '';
-  saveData();
-  renderPacking();
+  const cat=data.packing.find(c=>c.id===catId);
+  cat.items.push({id:uid(),name,checked:false});
+  input.value='';
+  saveData(); renderPacking();
 }
-
 function checkAllInCat(catId) {
-  const cat = data.packing.find(c => c.id === catId);
-  const allChecked = cat.items.every(i => i.checked);
-  cat.items.forEach(i => i.checked = !allChecked);
-  saveData();
-  renderPacking();
+  const cat=data.packing.find(c=>c.id===catId);
+  const all=cat.items.every(i=>i.checked);
+  cat.items.forEach(i=>i.checked=!all);
+  saveData(); renderPacking();
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  UTILS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function escHtml(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
+// ── Utils ──
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
 }
+// 缺少 icon-btn style inline fallback
 
-// Close modals on overlay click
-document.getElementById('stopModal').addEventListener('click', function(e) {
-  if (e.target === this) closeStopModal();
-});
-document.getElementById('dayModal').addEventListener('click', function(e) {
-  if (e.target === this) closeDayModal();
-});
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  INIT — Firebase 即時同步
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-loadData();
+document.getElementById('stopModal').addEventListener('click',function(e){if(e.target===this)closeStopModal();});
+document.getElementById('dayModal').addEventListener('click',function(e){if(e.target===this)closeDayModal();});
+
+// ── 初始化 ──
 render();
 
-// 監聽 Firebase 資料變化（任何人修改都會自動更新）
-tripRef.on('value', (snapshot) => {
+// Firebase 即時監聽（任何人修改，全家自動更新）
+tripRef.on('value', function(snapshot) {
   const val = snapshot.val();
   if (val) {
-    data = val;
+    data = normalizeData(val);
   } else {
-    // 第一次使用，把預設資料寫入 Firebase
+    // 第一次使用，寫入預設資料
     saveData();
   }
   render();
   setSyncStatus('online');
 });
 
-// 監聽連線狀態
-db.ref('.info/connected').on('value', (snap) => {
-  if (!snap.val()) setSyncStatus('offline');
-});
-</script>
-</body>
-</html>
-  item.checked = !item.checked;
-  saveData();
-  renderPacking();
-}
-
-function deletePackItem(catId, itemId) {
-  const cat = data.packing.find(c => c.id === catId);
-  cat.items = cat.items.filter(i => i.id !== itemId);
-  saveData();
-  renderPacking();
-}
-
-function addPackItem(catId) {
-  const input = document.getElementById('packInput-' + catId);
-  const name = input.value.trim();
-  if (!name) return;
-  const cat = data.packing.find(c => c.id === catId);
-  cat.items.push({ id: uid(), name, checked: false });
-  input.value = '';
-  saveData();
-  renderPacking();
-}
-
-function checkAllInCat(catId) {
-  const cat = data.packing.find(c => c.id === catId);
-  const allChecked = cat.items.every(i => i.checked);
-  cat.items.forEach(i => i.checked = !allChecked);
-  saveData();
-  renderPacking();
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  UTILS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function escHtml(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
-}
-
-// Close modals on overlay click
-document.getElementById('stopModal').addEventListener('click', function(e) {
-  if (e.target === this) closeStopModal();
-});
-document.getElementById('dayModal').addEventListener('click', function(e) {
-  if (e.target === this) closeDayModal();
-});
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//  INIT — Firebase 即時同步
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-loadData();
-render();
-
-// 監聽 Firebase 資料（任何人修改全家自動更新）
-tripRef.on('value', function(snapshot) {
-  const val = snapshot.val();
-  if (val) {
-    data = val;
-  } else {
-    saveData(); // 第一次使用，寫入預設資料
-  }
-  render();
-  setSyncStatus('online');
-});
-
-// 監聽連線狀態
+// 連線狀態監聽
 db.ref('.info/connected').on('value', function(snap) {
   if (!snap.val()) setSyncStatus('offline');
 });
 </script>
 </body>
 </html>
-);
-</script>
-</body>
-</html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
