@@ -171,6 +171,11 @@
     }
   .icon-btn{background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;font-size:.9rem;opacity:.6;transition:all .15s}
     .icon-btn:hover{opacity:1;background:#f5f5f5}
+  .lock-btn { background:rgba(255,255,255,.2); border:1.5px solid rgba(255,255,255,.5); color:white; border-radius:20px; padding:6px 14px; font-size:.82rem; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:5px; transition:all .2s; }
+  .lock-btn:hover { background:rgba(255,255,255,.35); }
+  .lock-btn.locked { background:rgba(255,220,0,.3); border-color:rgba(255,220,0,.6); }
+  .locked-banner { display:none; background:#fff8e1; border-bottom:2px solid #ffe082; padding:8px 20px; text-align:center; font-size:.85rem; color:#e65100; font-weight:600; }
+  .locked-banner.show { display:block; }
   </style>
 </head>
 <body>
@@ -186,6 +191,7 @@
       <div class="stat-chip">📍 <span id="totalStops">0</span> 景點</div>
       <div class="stat-chip">💴 ¥<span id="totalBudget">0</span></div>
       <div class="sync-chip" id="syncChip"><div class="sync-dot"></div><span id="syncLabel">連線中...</span></div>
+      <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓 瀏覽模式</button>
     </div>
   </div>
   <div class="tabs">
@@ -195,12 +201,11 @@
   </div>
 </header>
 
+<div class="locked-banner" id="lockedBanner">🔒 行程已鎖定，目前為純瀏覽模式，無法新增或修改</div>
 <main>
   <div class="tab-panel active" id="tab-itinerary">
     <div id="days-container"></div>
-    <div class="add-day-bar">
-      <button class="add-day-btn" onclick="openAddDayModal()">＋ 新增一天</button>
-    </div>
+    <div class="add-day-bar" id="addDayBar"></div>
   </div>
 
   <div class="tab-panel" id="tab-budget">
@@ -372,6 +377,34 @@ const DEFAULT_DATA = {
 // ── 狀態 ──
 let data = JSON.parse(JSON.stringify(DEFAULT_DATA));
 let editingStopId = null, editingDayId = null, editingStopDayId = null;
+let isLocked = false;
+
+function toggleLock() {
+  isLocked = !isLocked;
+  db.ref('locked').set(isLocked);
+  applyLockUI();
+}
+
+function applyLockUI() {
+  const btn = document.getElementById('lockBtn');
+  const banner = document.getElementById('lockedBanner');
+  if (isLocked) {
+    btn.textContent = '🔒 編輯模式';
+    btn.classList.add('locked');
+    banner.classList.add('show');
+  } else {
+    btn.textContent = '🔓 瀏覽模式';
+    btn.classList.remove('locked');
+    banner.classList.remove('show');
+  }
+  render();
+}
+
+// 監聽鎖定狀態
+db.ref('locked').on('value', function(snap) {
+  isLocked = snap.val() === true;
+  applyLockUI();
+});
 
 // ── Firebase 陣列轉換（Firebase 會把陣列存成物件） ──
 function toArr(v) {
@@ -496,6 +529,7 @@ function formatDate(s) {
 }
 
 function renderItinerary() {
+  document.getElementById('addDayBar').innerHTML = isLocked ? '' : '<button class="add-day-btn" onclick="openAddDayModal()">＋ 新增一天</button>';
   const c = document.getElementById('days-container');
   const days = data.days || [];
   if (!days.length) {
@@ -519,8 +553,8 @@ function renderItinerary() {
         <div class="day-header-right">
           ${dayCost>0?`<span class="day-cost-pill">¥${dayCost.toLocaleString()}</span>`:''}
           <a class="weather-btn" href="${weatherUrl}" target="_blank" onclick="event.stopPropagation()">🌤️ 天氣</a>
-          <button class="add-stop-btn" onclick="event.stopPropagation();openAddStopModal('${day.id}')">＋ 新增景點</button>
-          <button class="icon-btn" onclick="event.stopPropagation();openEditDayModal('${day.id}')" title="編輯">✏️</button>
+          ${!isLocked?`<button class="add-stop-btn" onclick="event.stopPropagation();openAddStopModal('${day.id}')">＋ 新增景點</button>`:''}
+          ${!isLocked?`<button class="icon-btn" onclick="event.stopPropagation();openEditDayModal('${day.id}')" title="編輯">✏️</button>`:''}
           <span class="collapse-icon">▾</span>
         </div>
       </div>
@@ -552,7 +586,7 @@ function renderStop(s, dayId, isLast) {
     </div>
     <div class="stop-actions">
       ${s.cost>0?`<span class="stop-cost">¥${s.cost.toLocaleString()}</span>`:''}
-      <button class="icon-btn" onclick="openEditStopModal('${dayId}','${s.id}')">✏️</button>
+      ${!isLocked?`<button class="icon-btn" onclick="openEditStopModal('${dayId}','${s.id}')">✏️</button>`:''}
     </div>
   </div>`;
 }
